@@ -4,7 +4,7 @@ from pathlib import Path
 import argparse
 from retriever import Retriever
 
-EVAL_PATH = Path("data/eval/questions.jsonl")
+EVAL_PATH = Path("eval/questions.jsonl")
 KS = (1, 3, 5, 10, 20)
 
 

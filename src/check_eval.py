@@ -4,7 +4,7 @@ from pathlib import Path
 
 from ingest import load_document
 
-EVAL_PATH = Path("data/eval/questions.jsonl")   # use the same path as in evaluate.py
+EVAL_PATH = Path("eval/questions.jsonl")
 RAW_DIR = Path("data/raw")
 
 NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")

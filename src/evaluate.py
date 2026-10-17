@@ -1,7 +1,9 @@
+import argparse
 import json
+import sys
 import time
 from pathlib import Path
-import argparse
+
 from retriever import Retriever
 
 EVAL_PATH = Path("eval/questions.jsonl")
@@ -22,30 +24,32 @@ def first_hit_rank(results, item):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", default="e5-small")
+    parser.add_argument("--mode", default="hybrid", choices=["dense", "bm25", "hybrid"])
+    parser.add_argument("--rerank", default=None, choices=["minilm", "bge-m3"])
+    parser.add_argument("--candidates", type=int, default=20)
+    parser.add_argument("--index", default="brute", choices=["brute", "lsh"])
+    parser.add_argument("--lsh-bits", type=int, default=8)
+    parser.add_argument("--lsh-tables", type=int, default=8)
+    parser.add_argument("--min-recall10", type=float, default=None)
+    parser.add_argument("--min-mrr", type=float, default=None)
+    args = parser.parse_args()
+
     with open(EVAL_PATH, encoding="utf-8") as f:
         items = [json.loads(line) for line in f if line.strip()]
     items = [it for it in items if it.get("answerable", True)]
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--candidates", type=int, default=20)
-
-    parser.add_argument("--model", default="e5-small")
-    parser.add_argument("--mode", default="hybrid", choices=["dense", "bm25", "hybrid"])
-    parser.add_argument("--rerank", default=None, choices=["minilm", "bge-m3"])
-    parser.add_argument("--index", default="brute", choices=["brute", "lsh"])
-    parser.add_argument("--lsh-bits", type=int, default=8)
-    parser.add_argument("--lsh-tables", type=int, default=8)
-    args = parser.parse_args()
-
     retriever = Retriever(args.model, args.mode, rerank_key=args.rerank,
                           candidates=args.candidates, index=args.index,
                           lsh_bits=args.lsh_bits, lsh_tables=args.lsh_tables)
-    ranks = []
-    times = []
+
+    ranks, times = [], []
     for it in items:
         t0 = time.perf_counter()
         results = retriever.search(it["question"], k=max(KS))
         times.append(time.perf_counter() - t0)
+
         rank = first_hit_rank(results, it)
         ranks.append(rank)
         status = f"rank {rank}" if rank else "MISS"
@@ -53,9 +57,20 @@ if __name__ == "__main__":
 
     n = len(ranks)
     print(f"\n{n} questions")
+    recall_at = {}
     for k in KS:
-        recall = sum(1 for r in ranks if r and r <= k) / n
-        print(f"Recall@{k:<2}: {recall:.2f}")
+        recall_at[k] = sum(1 for r in ranks if r and r <= k) / n
+        print(f"Recall@{k:<2}: {recall_at[k]:.2f}")
     mrr = sum(1 / r for r in ranks if r) / n
     print(f"MRR     : {mrr:.3f}")
     print(f"Latency : {1000 * sum(times) / len(times):.0f} ms/question")
+
+    failures = []
+    if args.min_recall10 is not None and recall_at[10] < args.min_recall10:
+        failures.append(f"Recall@10 {recall_at[10]:.2f} < {args.min_recall10}")
+    if args.min_mrr is not None and mrr < args.min_mrr:
+        failures.append(f"MRR {mrr:.3f} < {args.min_mrr}")
+    if failures:
+        sys.exit("QUALITY GATE FAILED: " + "; ".join(failures))
+    if args.min_recall10 is not None or args.min_mrr is not None:
+        print("Quality gate passed")

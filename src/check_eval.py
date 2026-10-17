@@ -1,5 +1,6 @@
 import json
 import re
+import sys
 from pathlib import Path
 
 from ingest import load_document
@@ -21,12 +22,14 @@ def key_terms(answer):
         return nums
     return [w.lower() for w in WORD.findall(answer) if w.lower() not in STOP][:5]
 
+
 def norm(text):
     """Lowercase and collapse whitespace so line breaks don't break matching."""
     return " ".join(text.lower().split())
 
+
 def main():
-    docs = {}       # doc name -> pages (load each PDF only once)
+    docs = {}
     problems = 0
 
     with open(EVAL_PATH, encoding="utf-8") as f:
@@ -71,12 +74,14 @@ def main():
 
             labelled = " ".join(pages[p - 1]["text"] for p in item["pages"]).lower()
             if not any(t.lower() in labelled for t in terms):
-                where = {t: [p["page"] for p in pages if t.lower() in p["text"].lower()][:8]
-                         for t in terms}
-                print(f"[{qid}] answer terms not on pages {item['pages']}. Found at: {where}")
+                found_at = {t: [p["page"] for p in pages if t.lower() in p["text"].lower()][:8]
+                            for t in terms}
+                print(f"[{qid}] answer terms not on pages {item['pages']}. Found at: {found_at}")
                 problems += 1
 
     print(f"\n{problems} problem(s) found")
+    if problems:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

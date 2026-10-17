@@ -39,7 +39,7 @@ class Retriever:
         top = np.argsort(-scores)[:k]
         return [(self.ids[i], float(scores[i])) for i in top]
 
-    def search(self, query, k=5, pool=50):
+    def search(self, query, k=5, pool=5):
         # With a reranker, stage 1 must return enough candidates to re-sort
         n = max(k, self.candidates) if self.reranker else k
 

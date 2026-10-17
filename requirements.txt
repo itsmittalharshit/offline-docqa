@@ -10,3 +10,6 @@ faiss-cpu
 presidio-analyzer
 presidio-anonymizer
 pytest
+fastapi
+uvicorn
+streamlit

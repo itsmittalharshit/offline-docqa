@@ -44,7 +44,8 @@ def to_fts_query(text):
 
 class BM25:
     def __init__(self, path=DB_PATH):
-        self.con = sqlite3.connect(path)
+
+        self.con = sqlite3.connect(path, check_same_thread=False)
 
     def search(self, query, k=10):
         fts_query = to_fts_query(query)

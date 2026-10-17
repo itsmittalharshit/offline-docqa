@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 import argparse
 from retriever import Retriever
@@ -26,14 +27,20 @@ if __name__ == "__main__":
     items = [it for it in items if it.get("answerable", True)]
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--candidates", type=int, default=20)
+
     parser.add_argument("--model", default="e5-small")
-    parser.add_argument("--mode", default="dense", choices=["dense", "bm25", "hybrid"])
+    parser.add_argument("--mode", default="hybrid", choices=["dense", "bm25", "hybrid"])
+    parser.add_argument("--rerank", default=None, choices=["minilm", "bge-m3"])
     args = parser.parse_args()
 
-    retriever = Retriever(args.model, args.mode)
+    retriever = Retriever(args.model, args.mode, rerank_key=args.rerank, candidates=args.candidates)
     ranks = []
+    times = []
     for it in items:
+        t0 = time.perf_counter()
         results = retriever.search(it["question"], k=max(KS))
+        times.append(time.perf_counter() - t0)
         rank = first_hit_rank(results, it)
         ranks.append(rank)
         status = f"rank {rank}" if rank else "MISS"
@@ -46,3 +53,4 @@ if __name__ == "__main__":
         print(f"Recall@{k:<2}: {recall:.2f}")
     mrr = sum(1 / r for r in ranks if r) / n
     print(f"MRR     : {mrr:.3f}")
+    print(f"Latency : {1000 * sum(times) / len(times):.0f} ms/question")

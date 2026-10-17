@@ -2,6 +2,7 @@ import numpy as np
 
 from bm25 import BM25
 from embed import Embedder, index_path, load_chunks
+from rerank import Reranker
 
 
 def rrf(result_lists, k=60):
@@ -14,8 +15,9 @@ def rrf(result_lists, k=60):
 
 
 class Retriever:
-    def __init__(self, model_key="e5-small", mode="hybrid"):
+    def __init__(self, model_key="e5-small", mode="hybrid", rerank_key=None, candidates=20):
         self.mode = mode
+        self.candidates = candidates
         self.chunks = load_chunks()
         self.by_id = {c["id"]: c for c in self.chunks}
 
@@ -24,6 +26,7 @@ class Retriever:
         self.vectors = data["vectors"]
         self.embedder = Embedder(model_key) if mode != "bm25" else None
         self.bm25 = BM25()
+        self.reranker = Reranker(rerank_key) if rerank_key else None
 
     def _dense(self, query, k):
         q = self.embedder.query(query)
@@ -32,10 +35,18 @@ class Retriever:
         return [(self.ids[i], float(scores[i])) for i in top]
 
     def search(self, query, k=5, pool=50):
+        # With a reranker, stage 1 must return enough candidates to re-sort
+        n = max(k, self.candidates) if self.reranker else k
+
         if self.mode == "dense":
-            ranked = self._dense(query, k)
+            ranked = self._dense(query, n)
         elif self.mode == "bm25":
-            ranked = self.bm25.search(query, k)
-        else:  # hybrid: each method gives `pool` candidates, fused list cut to k
-            ranked = rrf([self._dense(query, pool), self.bm25.search(query, pool)])[:k]
-        return [(self.by_id[cid], score) for cid, score in ranked]
+            ranked = self.bm25.search(query, n)
+        else:  # hybrid
+            ranked = rrf([self._dense(query, pool), self.bm25.search(query, pool)])[:n]
+
+        results = [(self.by_id[cid], score) for cid, score in ranked]
+        if self.reranker:
+            head = self.reranker.rerank(query, results[:self.candidates], self.candidates)
+            results = (head + results[self.candidates:])[:k]
+        return results

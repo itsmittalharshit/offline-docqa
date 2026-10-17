@@ -56,9 +56,6 @@ jobs:
           path: ~/.cache/huggingface
           key: hf-e5-small-v1
 
-      - name: Download source PDFs
-        run: python src/download_data.py
-
       - name: Build index
         run: |
           python src/chunk.py

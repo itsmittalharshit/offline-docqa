@@ -22,6 +22,7 @@ def main():
     parser.add_argument("--candidates", type=int, default=10)
     parser.add_argument("--limit", type=int, default=None, help="only the first N questions")
     parser.add_argument("--verify", action="store_true")
+    parser.add_argument("--mlflow", action="store_true")
 
     args = parser.parse_args()
 
@@ -92,6 +93,26 @@ def main():
     if args.verify:
         print(f"Answers w/ unsupported    : {mean([r.get('has_unsupported') for r in answered]):.2f}")
     print(f"Avg generation time       : {mean([r['generation_s'] for r in rows]):.1f} s")
+    if args.mlflow:
+        from generate import LLM_MODEL
+        from tracking import log_run
+        params = {"llm": LLM_MODEL, "prompt": args.prompt, "rerank": args.rerank,
+                  "candidates": args.candidates, "verify": args.verify}
+        metrics = {
+            "false_refusal_rate": mean([r["refused"] for r in answerable_rows]),
+            "correctness": mean([r.get("correct") for r in answered]),
+            "cites_correct_page": mean([r.get("cites_correct_page") for r in answered]),
+            "citation_precision": mean([r.get("citation_precision") for r in answered]),
+            "language_ok": mean([r.get("language_ok") for r in answered]),
+            "invented_citations": mean([r.get("invalid_citations") for r in answered]),
+            "avg_generation_s": mean([r["generation_s"] for r in rows]),
+        }
+        if unanswerable_rows:
+            metrics["hallucination_unanswerable"] = mean([not r["refused"] for r in unanswerable_rows])
+        if args.verify:
+            metrics["answers_unsupported"] = mean([r.get("has_unsupported") for r in answered])
+        log_run("generation", params, metrics, {"answers": rows})
+        print("Logged to MLflow")
 
     out = OUT_DIR / f"gen_{args.prompt}.jsonl"
     with open(out, "w", encoding="utf-8") as f:

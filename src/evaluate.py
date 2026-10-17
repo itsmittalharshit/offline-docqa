@@ -34,6 +34,7 @@ if __name__ == "__main__":
     parser.add_argument("--lsh-tables", type=int, default=8)
     parser.add_argument("--min-recall10", type=float, default=None)
     parser.add_argument("--min-mrr", type=float, default=None)
+    parser.add_argument("--mlflow", action="store_true")
     args = parser.parse_args()
 
     with open(EVAL_PATH, encoding="utf-8") as f:
@@ -64,6 +65,16 @@ if __name__ == "__main__":
     mrr = sum(1 / r for r in ranks if r) / n
     print(f"MRR     : {mrr:.3f}")
     print(f"Latency : {1000 * sum(times) / len(times):.0f} ms/question")
+    if args.mlflow:
+        from tracking import log_run
+        params = {"embedder": args.model, "mode": args.mode,
+                  "rerank": args.rerank or "none", "candidates": args.candidates,
+                  "index": args.index}
+        metrics = {f"recall_at_{k}": recall_at[k] for k in KS}
+        metrics.update({"mrr": mrr, "latency_ms": 1000 * sum(times) / len(times)})
+        details = {"ranks": {it["id"]: r for it, r in zip(items, ranks)}}
+        log_run("retrieval", params, metrics, details)
+        print("Logged to MLflow")
 
     failures = []
     if args.min_recall10 is not None and recall_at[10] < args.min_recall10:

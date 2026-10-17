@@ -42,7 +42,7 @@ class ClaimVerifier:
         self.high = high
         self.tokenizer = AutoTokenizer.from_pretrained(NLI_MODEL)
         self.model = AutoModelForSequenceClassification.from_pretrained(NLI_MODEL)
-        self.model.to(device).eval()
+        self.model.to(self.device).eval()
         labels = {name.lower(): idx for idx, name in self.model.config.id2label.items()}
         self.entail_idx = labels["entailment"]
 

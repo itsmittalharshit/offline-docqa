@@ -1,0 +1,8 @@
+pymupdf
+numpy
+sentence-transformers
+transformers
+torch
+sentencepiece
+protobuf
+requests

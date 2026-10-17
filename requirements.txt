@@ -7,3 +7,6 @@ sentencepiece
 protobuf
 requests
 faiss-cpu
+presidio-analyzer
+presidio-anonymizer
+pytest

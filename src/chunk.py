@@ -3,7 +3,7 @@ import json
 import re
 import sys
 from pathlib import Path
-
+from privacy import Redactor, redact_pages
 from ingest import load_document
 
 SENTENCE_SPLIT = re.compile(r"(?<![A-Z])(?<=[.?!])\s+(?=[A-Z(₹\d])")
@@ -79,6 +79,9 @@ def chunk_document(doc_name, pages, max_words=250, overlap_words=50):
 
 
 if __name__ == "__main__":
+    redact = "--no-redact" not in sys.argv
+    positional = [a for a in sys.argv[1:] if not a.startswith("--")]
+    redactor = Redactor() if redact else None
     raw_dir = Path("data/raw")
     out_path = Path("data/processed/chunks.jsonl")
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -92,6 +95,9 @@ if __name__ == "__main__":
         if low / len(pages) > 0.8:
             print(f"  WARNING: {low}/{len(pages)} pages have almost no text "
                   f"— file may be corrupt or scanned")
+        if redactor:
+            counts = redact_pages(pages, redactor)
+            print(f"  redacted: {dict(counts) if counts else 'nothing found'}")
         chunks = chunk_document(pdf.name, pages)
         if not chunks:
             print(f"  WARNING: no text extracted from {pdf.name}, skipped")
@@ -105,7 +111,7 @@ if __name__ == "__main__":
             f.write(json.dumps(c, ensure_ascii=False) + "\n")
     print(f"Saved {len(all_chunks)} chunks to {out_path}")
 
-    show = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+    show = int(positional[0]) if positional else 0
     c = all_chunks[show]
     print(f"\n---- Chunk {show} | {c['doc']} p.{c['page_start']}-{c['page_end']} "
           f"| {c['n_words']} words ----")

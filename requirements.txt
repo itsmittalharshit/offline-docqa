@@ -6,3 +6,4 @@ torch
 sentencepiece
 protobuf
 requests
+faiss-cpu

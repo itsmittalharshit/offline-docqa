@@ -3,7 +3,7 @@ import numpy as np
 from bm25 import BM25
 from embed import Embedder, index_path, load_chunks
 from rerank import Reranker
-
+from lsh import LSHIndex
 
 def rrf(result_lists, k=60):
     """Reciprocal Rank Fusion: combine rankings using ranks only."""
@@ -15,7 +15,8 @@ def rrf(result_lists, k=60):
 
 
 class Retriever:
-    def __init__(self, model_key="e5-small", mode="hybrid", rerank_key=None, candidates=20):
+    def __init__(self, model_key="e5-small", mode="hybrid", rerank_key=None, candidates=20,
+                 index="brute", lsh_bits=8, lsh_tables=8):
         self.mode = mode
         self.candidates = candidates
         self.chunks = load_chunks()
@@ -27,9 +28,13 @@ class Retriever:
         self.embedder = Embedder(model_key) if mode != "bm25" else None
         self.bm25 = BM25()
         self.reranker = Reranker(rerank_key) if rerank_key else None
+        self.lsh = LSHIndex(lsh_bits, lsh_tables).build(self.vectors) if index == "lsh" else None
 
     def _dense(self, query, k):
         q = self.embedder.query(query)
+        if self.lsh:
+            hits, _ = self.lsh.search(q, k)
+            return [(self.ids[i], score) for i, score in hits]
         scores = self.vectors @ q
         top = np.argsort(-scores)[:k]
         return [(self.ids[i], float(scores[i])) for i in top]

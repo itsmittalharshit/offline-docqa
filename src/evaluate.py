@@ -32,9 +32,14 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="e5-small")
     parser.add_argument("--mode", default="hybrid", choices=["dense", "bm25", "hybrid"])
     parser.add_argument("--rerank", default=None, choices=["minilm", "bge-m3"])
+    parser.add_argument("--index", default="brute", choices=["brute", "lsh"])
+    parser.add_argument("--lsh-bits", type=int, default=8)
+    parser.add_argument("--lsh-tables", type=int, default=8)
     args = parser.parse_args()
 
-    retriever = Retriever(args.model, args.mode, rerank_key=args.rerank, candidates=args.candidates)
+    retriever = Retriever(args.model, args.mode, rerank_key=args.rerank,
+                          candidates=args.candidates, index=args.index,
+                          lsh_bits=args.lsh_bits, lsh_tables=args.lsh_tables)
     ranks = []
     times = []
     for it in items:

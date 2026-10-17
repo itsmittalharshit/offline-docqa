@@ -5,6 +5,7 @@ from generate import answer_question, main_script
 from check_eval import key_terms
 from evaluate import EVAL_PATH, is_hit
 from retriever import Retriever
+from verify import ClaimVerifier
 
 OUT_DIR = Path("data/processed")
 
@@ -20,6 +21,8 @@ def main():
     parser.add_argument("--rerank", default="bge-m3", choices=["minilm", "bge-m3"])
     parser.add_argument("--candidates", type=int, default=10)
     parser.add_argument("--limit", type=int, default=None, help="only the first N questions")
+    parser.add_argument("--verify", action="store_true")
+
     args = parser.parse_args()
 
     with open(EVAL_PATH, encoding="utf-8") as f:
@@ -28,6 +31,8 @@ def main():
 
     retriever = Retriever("e5-small", "hybrid", rerank_key=args.rerank,
                           candidates=args.candidates)
+    verifier = ClaimVerifier() if args.verify else None
+    answer_question(retriever, items[0]["question"], prompt_version=args.prompt)
     rows = []
     for it in items:
         r = answer_question(retriever, it["question"], prompt_version=args.prompt)
@@ -49,15 +54,25 @@ def main():
                hits = [is_hit(c, it) for c in cited]
                row["cites_correct_page"] = any(hits)
                row["citation_precision"] = sum(hits) / len(hits) if hits else 0.0
+               if verifier:
+                   claims = verifier.verify(r["answer"], r["results"])
+                   row["claims"] = claims
+                   row["has_unsupported"] = any(not c["supported"] for c in claims)
 
         rows.append(row)
+
         if r["refused"]:
-               flag = "REFUSED"
+            flag = "REFUSED"
         elif row.get("language_ok") is False:
-               flag = "LANG"
+            flag = "LANG"
+        elif row.get("has_unsupported"):
+            flag = "UNSUP"
         else:
-               flag = "ok" if row.get("correct") else "check"
+            flag = "ok" if row.get("correct") else "check"
         print(f"[{it['id']}] {flag:8} ({row['type']}) {r['answer'][:90]!r}")
+        for c in row.get("claims", []):
+            if not c["supported"]:
+                print(f"      ✗ {c['score']:.2f}  {c['claim'][:100]}")
 
     answerable_rows = [r for r in rows if r["answerable"]]
     unanswerable_rows = [r for r in rows if not r["answerable"]]
@@ -74,6 +89,8 @@ def main():
     print(f"Citation precision        : {mean([r.get('citation_precision') for r in answered]):.2f}")
     print(f"Language matches question : {mean([r.get('language_ok') for r in answered]):.2f}")
     print(f"Answers w/ invented cites : {mean([r.get('invalid_citations') for r in answered]):.2f}")
+    if args.verify:
+        print(f"Answers w/ unsupported    : {mean([r.get('has_unsupported') for r in answered]):.2f}")
     print(f"Avg generation time       : {mean([r['generation_s'] for r in rows]):.1f} s")
 
     out = OUT_DIR / f"gen_{args.prompt}.jsonl"

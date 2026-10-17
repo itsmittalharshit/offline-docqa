@@ -83,19 +83,21 @@ def build_paragraphs(blocks):
             paragraphs[-1] += " " + block
     return [p for p in paragraphs if not is_mostly_numbers(p)]
 
-if __name__ == "__main__":
-    path = sys.argv[1]
-    page_to_show = int(sys.argv[2]) if len(sys.argv)>2 else 1
+def load_document(path):
+    """Full pipeline: extract -> remove headers -> rebuild paragraphs."""
     pages = extract_pdf(path)
-    repeated = remove_repeated(pages)
-
+    remove_repeated(pages)
     for p in pages:
         p["paragraphs"] = build_paragraphs(p["blocks"])
         p["text"] = "\n\n".join(p["paragraphs"])
         p["low_text"] = len(p["text"]) < 100
+    return pages
 
+if __name__ == "__main__":
+    path = sys.argv[1]
+    page_to_show = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    pages = load_document(path)
     print(f"Pages: {len(pages)}")
-    print(f"removed as repeated: {repeated}")
-    print(f"low-text: {[p["page"] for p in pages if p["low_text"]]}")
-    print("--Page--")
-    print(pages[page_to_show-1]["text"])
+    print(f"Low-text pages: {[p['page'] for p in pages if p['low_text']]}")
+    print(f"---- Page {page_to_show} ----")
+    print(pages[page_to_show - 1]["text"])

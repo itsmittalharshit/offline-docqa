@@ -4,7 +4,7 @@ import argparse
 from retriever import Retriever
 
 EVAL_PATH = Path("data/eval/questions.jsonl")
-KS = (1, 3, 5, 10)
+KS = (1, 3, 5, 10, 20)
 
 
 def is_hit(chunk, item):
@@ -27,9 +27,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default="e5-small")
+    parser.add_argument("--mode", default="dense", choices=["dense", "bm25", "hybrid"])
     args = parser.parse_args()
 
-    retriever = Retriever(args.model)
+    retriever = Retriever(args.model, args.mode)
     ranks = []
     for it in items:
         results = retriever.search(it["question"], k=max(KS))

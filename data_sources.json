@@ -1,0 +1,11 @@
+[
+  {"file": "report1.pdf",
+   "title": "Report of the Internal Working Group to Review the Liquidity Management Framework (July 2025)",
+   "url": "https://rbidocs.rbi.org.in/rdocs/PublicationReport/Pdfs/IWG060820254255B36745A04F23A683956447CB227A.PDF", "sha256": "58f542111b20880bb420bde8be553108369e7c606cd9fbb511895cb2cc81322c"},
+  {"file": "report2.pdf",
+   "title": "National Strategy for Financial Inclusion 2025-30",
+   "url": "https://rbidocs.rbi.org.in/rdocs/PublicationReport/Pdfs/NSFI01122025FC58ED2464D754F9B9AAA14DF525FDB00.PDF", "sha256": "0bf4c17221d1f11d51750900cc85d0acf44e01b5a92b39266f656f883b23acb1"},
+  {"file": "report3.pdf",
+   "title": "Report of the Advisory Committee on Ways and Means Advances to State Governments",
+   "url": "https://rbidocs.rbi.org.in/rdocs/PublicationReport/Pdfs/WMA290920266676057FDC10424886116A1CCA7F74BE.PDF", "sha256": "9b8f85d9d0fc389790947112b900ef795246f34f22cfb33e78b8c13f6781199b"}
+]

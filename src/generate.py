@@ -1,10 +1,10 @@
 import re
 import time
-
+import os
 import requests
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-LLM_MODEL = "qwen2.5:7b"
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/chat")
+LLM_MODEL = os.environ.get("DOCQA_LLM", "qwen2.5:7b")
 CITATION = re.compile(r"\[(\d+)\]")
 NOT_FOUND = "I could not find this in the documents."
 

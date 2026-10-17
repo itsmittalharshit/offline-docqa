@@ -1,6 +1,6 @@
 import threading
 from contextlib import asynccontextmanager
-
+import os
 import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -12,8 +12,10 @@ from retriever import Retriever
 from verify import ClaimVerifier
 from fastapi.responses import RedirectResponse
 
-RERANK = "bge-m3"
-CANDIDATES = 10
+
+RERANK = os.environ.get("DOCQA_RERANK", "bge-m3")
+CANDIDATES = int(os.environ.get("DOCQA_CANDIDATES", "10"))
+
 CONFIG = {"llm": LLM_MODEL, "prompt": "v3", "embedder": "e5-small",
           "rerank": RERANK, "candidates": CANDIDATES}
 

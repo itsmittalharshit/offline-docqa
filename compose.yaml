@@ -1,0 +1,23 @@
+services:
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      OLLAMA_URL: http://host.docker.internal:11434/api/chat
+      DOCQA_RERANK: minilm
+      HF_HUB_OFFLINE: "1"
+    volumes:
+      - ./data:/app/data
+      - ${HF_HOME:-${HOME}/.cache/huggingface}:/models/huggingface:ro
+
+  ui:
+    build: .
+    command: ["streamlit", "run", "src/ui.py", "--server.address=0.0.0.0", "--server.port=8501"]
+    ports:
+      - "127.0.0.1:8501:8501"
+    environment:
+      DOCQA_API: http://api:8000
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
+    depends_on:
+      - api

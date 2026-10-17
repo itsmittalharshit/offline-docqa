@@ -2,6 +2,7 @@ import re
 
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from device import best_device
 
 NLI_MODEL = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
 CITATION = re.compile(r"\[(\d+)\]")
@@ -35,8 +36,8 @@ def normalize_numbers(text):
 
 
 class ClaimVerifier:
-    def __init__(self, device="mps", low=0.5, high=0.9):
-        self.device = device
+    def __init__(self, device=None, low=0.5, high=0.9):
+        self.device = device or best_device()
         self.low = low
         self.high = high
         self.tokenizer = AutoTokenizer.from_pretrained(NLI_MODEL)

@@ -1,4 +1,5 @@
 from sentence_transformers import CrossEncoder
+from device import best_device
 
 RERANKERS = {
     "minilm": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
@@ -8,7 +9,7 @@ RERANKERS = {
 
 class Reranker:
     def __init__(self, key="minilm"):
-        self.model = CrossEncoder(RERANKERS[key], device="mps", max_length=512)
+        self.model = CrossEncoder(RERANKERS[key], device=best_device(), max_length=512)
 
     def rerank(self, query, results, k=5):
         """results: list of (chunk, score) from stage 1. Returns top-k re-sorted."""

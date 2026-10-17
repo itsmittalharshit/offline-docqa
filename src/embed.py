@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from device import best_device
 
 CHUNKS_PATH = Path("data/processed/chunks.jsonl")
 
@@ -33,10 +34,11 @@ def load_chunks(path=CHUNKS_PATH):
 class Embedder:
     def __init__(self, model_key):
         cfg = MODELS[model_key]
-        self.model = SentenceTransformer(cfg["name"], device="mps")
+        self.model = SentenceTransformer(cfg["name"], device=best_device())
         self.model.max_seq_length = 512
         self.query_prefix = cfg["query_prefix"]
         self.passage_prefix = cfg["passage_prefix"]
+        
 
     def passages(self, texts):
         return self.model.encode(

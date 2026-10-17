@@ -1,19 +1,19 @@
 import numpy as np
 
-from embed import INDEX_PATH, embed_query, load_chunks, load_model
+from embed import Embedder, index_path, load_chunks
 
 
 class Retriever:
-    def __init__(self):
+    def __init__(self, model_key="e5-small"):
         self.chunks = load_chunks()
         self.by_id = {c["id"]: c for c in self.chunks}
-        data = np.load(INDEX_PATH)
+        data = np.load(index_path(model_key))
         self.ids = list(data["ids"])
         self.vectors = data["vectors"]
-        self.model = load_model()
+        self.embedder = Embedder(model_key)
 
     def search(self, query, k=5):
-        q = embed_query(self.model, query)
+        q = self.embedder.query(query)
         scores = self.vectors @ q
         top = np.argsort(-scores)[:k]
         return [(self.by_id[self.ids[i]], float(scores[i])) for i in top]

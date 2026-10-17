@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-
+import argparse
 from retriever import Retriever
 
 EVAL_PATH = Path("data/eval/questions.jsonl")
@@ -25,7 +25,11 @@ if __name__ == "__main__":
         items = [json.loads(line) for line in f if line.strip()]
     items = [it for it in items if it.get("answerable", True)]
 
-    retriever = Retriever()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", default="e5-small")
+    args = parser.parse_args()
+
+    retriever = Retriever(args.model)
     ranks = []
     for it in items:
         results = retriever.search(it["question"], k=max(KS))
